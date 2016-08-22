@@ -99,6 +99,7 @@ var uis = angular.module('ui.select', [])
   placeholder: '', // Empty by default, like HTML tag <select>
   refreshDelay: 1000, // In milliseconds
   closeOnSelect: true,
+  firstItemActive: true,
   skipFocusser: false,
   dropdownPosition: 'auto',
   removeSelected: true,

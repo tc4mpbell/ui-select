@@ -252,11 +252,11 @@ uis.directive('uiSelectMultiple', ['uiSelectMinErr','$timeout', function(uiSelec
                 } else {
                   return curr;
                 }
-                
+
               } else {
                 // If nothing yet selected, select last item
-                return last;  
-              }              
+                return last;
+              }
               break;
             case KEY.DELETE:
               // Remove selected item and select next item
@@ -280,7 +280,7 @@ uis.directive('uiSelectMultiple', ['uiSelectMinErr','$timeout', function(uiSelec
 
         if ( ! KEY.isVerticalMovement(e.which) ) {
           scope.$evalAsync( function () {
-            $select.activeIndex = $select.taggingLabel === false ? -1 : 0;
+            $select.activeIndex = $select.taggingLabel === false || !$select.firstItemActive ? -1 : 0;
           });
         }
         // Push a "create new" item into array if there is a search string
@@ -291,7 +291,7 @@ uis.directive('uiSelectMultiple', ['uiSelectMinErr','$timeout', function(uiSelec
             return;
           }
           // always reset the activeIndex to the first item when tagging
-          $select.activeIndex = $select.taggingLabel === false ? -1 : 0;
+          $select.activeIndex = $select.taggingLabel === false || !$select.firstItemActive ? -1 : 0;
           // taggingLabel === false bypasses all of this
           if ($select.taggingLabel === false) return;
 
@@ -327,7 +327,7 @@ uis.directive('uiSelectMultiple', ['uiSelectMinErr','$timeout', function(uiSelec
               })
             ) {
               scope.$evalAsync(function () {
-                $select.activeIndex = 0;
+                $select.activeIndex = $select.firstItemActive ? 0 : -1;
                 $select.items = items;
               });
               return;
@@ -361,7 +361,7 @@ uis.directive('uiSelectMultiple', ['uiSelectMinErr','$timeout', function(uiSelec
               if ( hasTag ) {
                 items = stashArr;
                 scope.$evalAsync( function () {
-                  $select.activeIndex = 0;
+                  $select.activeIndex = $select.firstItemActive ? 0 : -1;
                   $select.items = items;
                 });
               }
@@ -385,7 +385,7 @@ uis.directive('uiSelectMultiple', ['uiSelectMinErr','$timeout', function(uiSelec
             items = items.concat(stashArr);
           }
           scope.$evalAsync( function () {
-            $select.activeIndex = 0;
+            $select.activeIndex = $select.firstItemActive ? 0 : -1;
             $select.items = items;
 
             if ($select.isGrouped) {

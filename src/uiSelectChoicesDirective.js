@@ -39,7 +39,7 @@ uis.directive('uiSelectChoices',
 
       choices.attr('ng-repeat', parserResult.repeatExpression(groupByExp))
              .attr('ng-if', '$select.open'); //Prevent unnecessary watches when dropdown is closed
-    
+
 
       var rowsInner = tElement.querySelectorAll('.ui-select-choices-row-inner');
       if (rowsInner.length !== 1) {
@@ -47,19 +47,24 @@ uis.directive('uiSelectChoices',
       }
       rowsInner.attr('uis-transclude-append', ''); //Adding uisTranscludeAppend directive to row element after choices element has ngRepeat
 
-      // If IE8 then need to target rowsInner to apply the ng-click attr as choices will not capture the event. 
+      // If IE8 then need to target rowsInner to apply the ng-click attr as choices will not capture the event.
       var clickTarget = $window.document.addEventListener ? choices : rowsInner;
       clickTarget.attr('ng-click', '$select.select(' + parserResult.itemName + ',$select.skipFocusser,$event)');
-      
+
       return function link(scope, element, attrs, $select) {
 
-       
+        attrs.$observe('firstItemActive', function() {
+          // $eval() is needed otherwise we get a string instead of a boolean
+          var firstItemActive = scope.$eval(attrs.firstItemActive);
+          $select.firstItemActive = firstItemActive !== undefined ? firstItemActive : uiSelectConfig.firstItemActive;
+        });
+
         $select.parseRepeatAttr(attrs.repeat, groupByExp, groupFilterExp); //Result ready at $select.parserResult
 
         $select.disableChoiceExpression = attrs.uiDisableChoice;
         $select.onHighlightCallback = attrs.onHighlight;
 
-        $select.dropdownPosition = attrs.position ? attrs.position.toLowerCase() : uiSelectConfig.dropdownPosition;        
+        $select.dropdownPosition = attrs.position ? attrs.position.toLowerCase() : uiSelectConfig.dropdownPosition;
 
         scope.$on('$destroy', function() {
           choices.remove();
@@ -67,7 +72,7 @@ uis.directive('uiSelectChoices',
 
         scope.$watch('$select.search', function(newValue) {
           if(newValue && !$select.open && $select.multiple) $select.activate(false, true);
-          $select.activeIndex = $select.tagging.isActivated ? -1 : 0;
+          $select.activeIndex = $select.tagging.isActivated || !$select.firstItemActive ? -1 : 0;
           if (!attrs.minimumInputLength || $select.search.length >= attrs.minimumInputLength) {
             $select.refresh(attrs.refresh);
           } else {
