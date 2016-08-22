@@ -2158,10 +2158,36 @@ describe('ui-select tests', function() {
         var el = createUiSelectMultiple();
         var searchInput = el.find('.ui-select-search');
 
+        // triggerKeydown(searchInput, Key.Down);
+        // triggerKeydown(searchInput, Key.Enter);
+        triggerKeydown(searchInput, Key.Down); //Open dropdown
+        el.scope().$select.activeIndex = 0;
+
         triggerKeydown(searchInput, Key.Down);
         triggerKeydown(searchInput, Key.Enter);
+
         expect(scope.selection.selectedMultiple.length).toEqual(2);
 
+    });
+
+    it('should close choices on ENTER when firstItemActive set to false', function() {
+
+        scope.selection.selectedMultiple = [scope.people[5]]; //Samantha
+        var el = createUiSelectMultiple({firstItemActive: false});
+        var searchInput = el.find('.ui-select-search');
+
+        triggerKeydown(searchInput, Key.Enter);
+        expect(el.scope().$select.open).toEqual(false);
+    });
+
+    it('should close choices on TAB when firstItemActive set to false', function() {
+
+        scope.selection.selectedMultiple = [scope.people[5]]; //Samantha
+        var el = createUiSelectMultiple({firstItemActive: false});
+        var searchInput = el.find('.ui-select-search');
+
+        triggerKeydown(searchInput, Key.Tab);
+        expect(el.scope().$select.open).toEqual(false);
     });
 
     it('should stop the propagation when pressing ENTER key from dropdown', function() {

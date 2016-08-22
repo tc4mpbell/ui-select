@@ -1,7 +1,7 @@
 /*!
  * ui-select
  * http://github.com/angular-ui/ui-select
- * Version: 0.19.3 - 2016-08-17T06:16:41.345Z
+ * Version: 0.19.4 - 2016-08-22T16:29:21.694Z
  * License: MIT
  */
 
@@ -109,6 +109,7 @@ var uis = angular.module('ui.select', [])
   placeholder: '', // Empty by default, like HTML tag <select>
   refreshDelay: 1000, // In milliseconds
   closeOnSelect: true,
+  firstItemActive: true,
   skipFocusser: false,
   dropdownPosition: 'auto',
   removeSelected: true,
@@ -218,7 +219,7 @@ uis.directive('uiSelectChoices',
 
       choices.attr('ng-repeat', parserResult.repeatExpression(groupByExp))
              .attr('ng-if', '$select.open'); //Prevent unnecessary watches when dropdown is closed
-    
+
 
       var rowsInner = tElement.querySelectorAll('.ui-select-choices-row-inner');
       if (rowsInner.length !== 1) {
@@ -226,19 +227,24 @@ uis.directive('uiSelectChoices',
       }
       rowsInner.attr('uis-transclude-append', ''); //Adding uisTranscludeAppend directive to row element after choices element has ngRepeat
 
-      // If IE8 then need to target rowsInner to apply the ng-click attr as choices will not capture the event. 
+      // If IE8 then need to target rowsInner to apply the ng-click attr as choices will not capture the event.
       var clickTarget = $window.document.addEventListener ? choices : rowsInner;
       clickTarget.attr('ng-click', '$select.select(' + parserResult.itemName + ',$select.skipFocusser,$event)');
-      
+
       return function link(scope, element, attrs, $select) {
 
-       
+        attrs.$observe('firstItemActive', function() {
+          // $eval() is needed otherwise we get a string instead of a boolean
+          var firstItemActive = scope.$eval(attrs.firstItemActive);
+          $select.firstItemActive = firstItemActive !== undefined ? firstItemActive : uiSelectConfig.firstItemActive;
+        });
+
         $select.parseRepeatAttr(attrs.repeat, groupByExp, groupFilterExp); //Result ready at $select.parserResult
 
         $select.disableChoiceExpression = attrs.uiDisableChoice;
         $select.onHighlightCallback = attrs.onHighlight;
 
-        $select.dropdownPosition = attrs.position ? attrs.position.toLowerCase() : uiSelectConfig.dropdownPosition;        
+        $select.dropdownPosition = attrs.position ? attrs.position.toLowerCase() : uiSelectConfig.dropdownPosition;
 
         scope.$on('$destroy', function() {
           choices.remove();
@@ -246,7 +252,7 @@ uis.directive('uiSelectChoices',
 
         scope.$watch('$select.search', function(newValue) {
           if(newValue && !$select.open && $select.multiple) $select.activate(false, true);
-          $select.activeIndex = $select.tagging.isActivated ? -1 : 0;
+          $select.activeIndex = $select.tagging.isActivated || !$select.firstItemActive ? -1 : 0;
           if (!attrs.minimumInputLength || $select.search.length >= attrs.minimumInputLength) {
             $select.refresh(attrs.refresh);
           } else {
@@ -290,7 +296,7 @@ uis.controller('uiSelectCtrl',
   ctrl.skipFocusser = false; //Set to true to avoid returning focus to ctrl when item is selected
   ctrl.search = EMPTY_SEARCH;
 
-  ctrl.activeIndex = 0; //Dropdown of choices
+  ctrl.activeIndex = ctrl.firstItemActive ? 0 : -1; //Dropdown of choices
   ctrl.items = []; //All available choices
 
   ctrl.open = false;
@@ -381,12 +387,14 @@ uis.controller('uiSelectCtrl',
 
       ctrl.open = true;
 
-      ctrl.activeIndex = ctrl.activeIndex >= ctrl.items.length ? 0 : ctrl.activeIndex;
+      ctrl.activeIndex = ctrl.activeIndex >= ctrl.items.length ? (ctrl.firstItemActive ? 0 : -1) : ctrl.activeIndex;
 
       // ensure that the index is set to zero for tagging variants
       // that where first option is auto-selected
-      if ( ctrl.activeIndex === -1 && ctrl.taggingLabel !== false ) {
+      if ( ctrl.firstItemActive && ctrl.activeIndex === -1 && ctrl.taggingLabel !== false ) {
         ctrl.activeIndex = 0;
+      } else {
+        ctrl.activeIndex = -1;
       }
 
       var container = $element.querySelectorAll('.ui-select-choices-content');
@@ -689,7 +697,7 @@ uis.controller('uiSelectCtrl',
             ctrl.close(skipFocusser);
             return;
           }
-        }        
+        }
         _resetSearchInput();
         $scope.$broadcast('uis:select', item);
 
@@ -842,13 +850,20 @@ uis.controller('uiSelectCtrl',
         else if (ctrl.activeIndex > 0 || (ctrl.search.length === 0 && ctrl.tagging.isActivated && ctrl.activeIndex > -1)) { ctrl.activeIndex--; }
         break;
       case KEY.TAB:
-        if (!ctrl.multiple || ctrl.open) ctrl.select(ctrl.items[ctrl.activeIndex], true);
+        if ((!ctrl.multiple || ctrl.open) && ctrl.activeIndex >= 0) {
+          ctrl.select(ctrl.items[ctrl.activeIndex], true);
+        } else {
+          ctrl.close();
+        }
         break;
       case KEY.ENTER:
         if(ctrl.open && (ctrl.tagging.isActivated || ctrl.activeIndex >= 0)){
           ctrl.select(ctrl.items[ctrl.activeIndex], ctrl.skipFocusser); // Make sure at least one dropdown item is highlighted before adding if not in tagging mode
         } else {
           ctrl.activate(false, true); //In case its the search input in 'multiple' mode
+          if(!ctrl.firstItemActive) {
+            ctrl.close();
+          }
         }
         break;
       case KEY.ESC:
@@ -1718,11 +1733,11 @@ uis.directive('uiSelectMultiple', ['uiSelectMinErr','$timeout', function(uiSelec
                 } else {
                   return curr;
                 }
-                
+
               } else {
                 // If nothing yet selected, select last item
-                return last;  
-              }              
+                return last;
+              }
               break;
             case KEY.DELETE:
               // Remove selected item and select next item
@@ -1746,7 +1761,7 @@ uis.directive('uiSelectMultiple', ['uiSelectMinErr','$timeout', function(uiSelec
 
         if ( ! KEY.isVerticalMovement(e.which) ) {
           scope.$evalAsync( function () {
-            $select.activeIndex = $select.taggingLabel === false ? -1 : 0;
+            $select.activeIndex = $select.taggingLabel === false || !$select.firstItemActive ? -1 : 0;
           });
         }
         // Push a "create new" item into array if there is a search string
@@ -1757,7 +1772,7 @@ uis.directive('uiSelectMultiple', ['uiSelectMinErr','$timeout', function(uiSelec
             return;
           }
           // always reset the activeIndex to the first item when tagging
-          $select.activeIndex = $select.taggingLabel === false ? -1 : 0;
+          $select.activeIndex = $select.taggingLabel === false || !$select.firstItemActive ? -1 : 0;
           // taggingLabel === false bypasses all of this
           if ($select.taggingLabel === false) return;
 
@@ -1793,7 +1808,7 @@ uis.directive('uiSelectMultiple', ['uiSelectMinErr','$timeout', function(uiSelec
               })
             ) {
               scope.$evalAsync(function () {
-                $select.activeIndex = 0;
+                $select.activeIndex = $select.firstItemActive ? 0 : -1;
                 $select.items = items;
               });
               return;
@@ -1827,7 +1842,7 @@ uis.directive('uiSelectMultiple', ['uiSelectMinErr','$timeout', function(uiSelec
               if ( hasTag ) {
                 items = stashArr;
                 scope.$evalAsync( function () {
-                  $select.activeIndex = 0;
+                  $select.activeIndex = $select.firstItemActive ? 0 : -1;
                   $select.items = items;
                 });
               }
@@ -1851,7 +1866,7 @@ uis.directive('uiSelectMultiple', ['uiSelectMinErr','$timeout', function(uiSelec
             items = items.concat(stashArr);
           }
           scope.$evalAsync( function () {
-            $select.activeIndex = 0;
+            $select.activeIndex = $select.firstItemActive ? 0 : -1;
             $select.items = items;
 
             if ($select.isGrouped) {
