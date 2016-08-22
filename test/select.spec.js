@@ -22,7 +22,7 @@ describe('ui-select tests', function() {
       restrict: 'EA',
       template: '<ui-select> \
             <ui-select-match placeholder="Pick one...">{{$select.selected.name}}</ui-select-match> \
-            <ui-select-choices repeat="person in people | filter: $select.search"> \
+            <ui-select-choices repeat="person in people | filter: $select.search" first-item-active="true"> \
               <div ng-bind-html="person.name | highlight: $select.search"></div> \
             </ui-select-choices> \
           </ui-select>',
@@ -161,12 +161,14 @@ describe('ui-select tests', function() {
       if (attrs.ngClass !== undefined) { attrsHtml += ' ng-class="' + attrs.ngClass + '"'; }
       if (attrs.resetSearchInput !== undefined) { attrsHtml += ' reset-search-input="' + attrs.resetSearchInput + '"'; }
       if (attrs.closeOnSelect !== undefined) { attrsHtml += ' close-on-select="' + attrs.closeOnSelect + '"'; }
-    }
-
+      if (attrs.firstItemActive === undefined) { attrs.firstItemActive = true; }
+  } else {
+      attrs = { firstItemActive: true };
+  }
     return compileTemplate(
       '<ui-select ng-model="selection.selected"' + attrsHtml + '> \
         <ui-select-match placeholder="Pick one..."' + matchAttrsHtml + '>{{$select.selected.name}}</ui-select-match> \
-        <ui-select-choices repeat="person in people | filter: $select.search"> \
+        <ui-select-choices repeat="person in people | filter: $select.search" first-item-active="' + attrs.firstItemActive + '"> \
           <div ng-bind-html="person.name | highlight: $select.search"></div> \
           <div ng-bind-html="person.email | highlight: $select.search"></div> \
         </ui-select-choices> \
@@ -1813,12 +1815,15 @@ describe('ui-select tests', function() {
             if (attrs.lockChoice !== undefined) { matchesAttrsHtml += ' ui-lock-choice="' + attrs.lockChoice + '"'; }
             if (attrs.removeSelected !== undefined) { attrsHtml += ' remove-selected="' + attrs.removeSelected + '"'; }
             if (attrs.resetSearchInput !== undefined) { attrsHtml += ' reset-search-input="' + attrs.resetSearchInput + '"'; }
+            if (attrs.firstItemActive === undefined) { attrs.firstItemActive = true; }
+        } else {
+            attrs = { firstItemActive: true };
         }
 
         return compileTemplate(
             '<ui-select multiple ng-model="selection.selectedMultiple"' + attrsHtml + ' theme="bootstrap" style="width: 800px;"> \
                 <ui-select-match "' + matchesAttrsHtml + ' placeholder="Pick one...">{{$item.name}} &lt;{{$item.email}}&gt;</ui-select-match> \
-                <ui-select-choices repeat="person in people | filter: $select.search"' + choicesAttrsHtml + '> \
+                <ui-select-choices repeat="person in people | filter: $select.search"' + choicesAttrsHtml + ' first-item-active="' + attrs.firstItemActive + '"> \
                   <div ng-bind-html="person.name | highlight: $select.search"></div> \
                   <div ng-bind-html="person.email | highlight: $select.search"></div> \
                 </ui-select-choices> \
